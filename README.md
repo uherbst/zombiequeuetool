@@ -3,7 +3,7 @@
 ## Disclaimer
 
 zombiequeuetool is not developed and maintained by Solace.<br/>
-It is currently only tested against PubSub+ software brokers (VMRs), not appliances.<br/>
+It is currently only tested against PubSub+ software brokers (VMRs), not appliances. But most probably, it will works with appliances without any issues.<br/>
 
 ## Features
 zombiequeuetool is written in go, based on the Solace Legacy SEMP protocol.<br/>
