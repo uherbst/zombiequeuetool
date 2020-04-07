@@ -71,11 +71,8 @@ func listQueuesWithoutConsumer(a Arguments) (map[string]bool, error) {
 						Queue []struct {
 							QueueName string `xml:"name"`
 							Info      struct {
-								MsgVpnName string `xml:"message-vpn"`
-								// Quota           float64 `xml:"quota"`
-								// Usage           float64 `xml:"current-spool-usage-in-mb"`
-								// SpooledMsgCount float64 `xml:"num-messages-spooled"`
-								BindCount float64 `xml:"bind-count"`
+								MsgVpnName string  `xml:"message-vpn"`
+								BindCount  float64 `xml:"bind-count"`
 							} `xml:"info"`
 						} `xml:"queue"`
 					} `xml:"queues"`
@@ -137,16 +134,6 @@ func listQueuesWithoutConsumer(a Arguments) (map[string]bool, error) {
 }
 
 func main() {
-
-	/*
-		Test cases
-
-		- SEMPv2 TLS, 1 queue
-		- SEMPv2 TLS, viele Queues (mehr als in einen Aufruf passt)
-		- SEMPv2 TLS, keine queue
-		- SEMPv2, und nach 10 Sek. bekommt die Queue einen Bind
-	*/
-
 	// Handling command line
 	cmdargs := doCommandLine()
 	startTime := time.Now()
@@ -171,17 +158,12 @@ func main() {
 			if !newQueues[currentQueue] {
 				// if not listed in newQueues, this queue HAS binds or does not exist anymore.
 				// in both cases: We dont care about that queue anymore.
+				if *cmdargs.debug {
+					fmt.Println("Queue " + currentQueue + " found with bound consumer.")
+				}
 				delete(queues, currentQueue)
 			}
 		}
-		/*
-			Test cases
-			- SEMPv2 plain, 1 queue
-			- SEMPv2 TLS, 1 queue
-			- SEMPv2 TLS, viele Queues (mehr als in einen Aufruf passt)
-			- SEMPv2 TLS, keine queue
-			- SEMPv2, und nach 10 Sek. bekommt die Queue einen Bind
-		*/
 		time.Sleep(1 * time.Second)
 	}
 
