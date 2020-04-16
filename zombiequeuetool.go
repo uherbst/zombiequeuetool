@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -29,6 +30,7 @@ type Arguments struct {
 	duration            *int
 	insecure            *bool
 	debug               *bool
+	filter              *string
 }
 
 const separator = "|" // separates msg-vpn-name and queue name
@@ -43,6 +45,7 @@ func doCommandLine() Arguments {
 	a.duration = flag.Int("duration", 10, "how long to wait for queues without binding ?")
 	a.debug = flag.Bool("debug", false, "Enable debug mode")
 	a.insecure = flag.Bool("insecure", false, "do not verify TLS server certificate")
+	a.filter = flag.String("filter", "", "Regex-filter for msg-vpn/queue-names")
 	flag.Parse()
 
 	if len(*a.password) == 0 {
@@ -57,6 +60,7 @@ func doCommandLine() Arguments {
 		fmt.Println("Duration: ", *a.duration)
 		fmt.Println("Debugmode: ", *a.debug)
 		fmt.Println("dont validate TLS: ", *a.insecure)
+		fmt.Println("Regex Filter: ", *a.filter)
 		fmt.Println("------------ End of command line values ------")
 		fmt.Println()
 	}
@@ -169,13 +173,15 @@ func main() {
 		time.Sleep(1 * time.Second)
 	}
 
-	if len(queues) == 0 {
-		if *cmdargs.debug {
-			fmt.Println("No queues without binding found")
-		}
-	} else {
-		for queue, _ := range queues {
+	numberQueuesFound := 0
+	regex := regexp.MustCompile(*cmdargs.filter)
+	for queue, _ := range queues {
+		if regex.MatchString(queue) {
 			fmt.Println(queue)
+			numberQueuesFound++
 		}
+	}
+	if numberQueuesFound == 0 {
+		fmt.Println("No queues without binding found")
 	}
 }

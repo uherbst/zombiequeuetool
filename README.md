@@ -19,6 +19,8 @@ Usage of ./zombiequeuetool:
         Enable debug mode
   -duration int
         how long to wait for queues without binding ? (default 10)
+ -filter string
+        Regex-filter for msg-vpn/queue-names
   -insecure
         do not verify TLS server certificate
   -password string
@@ -27,5 +29,36 @@ Usage of ./zombiequeuetool:
         URL to the SEMP service
   -user string
         username for the SEMP access
-</code>
+</code></pre>
+
+## Output formt
+
+To uniqly identify a queue, you need also the name of the message-vpn - yes, you can have the same queue name in multiple message-vpns.
+
+The output format is:
+msg-vpn-name|queue-name
+
+## Filtering the output
+All regexes supported from the go-regexp-package can be used to filter the output - for both parts: msg-vpn-name and queue name.
+
+To be short: have a look at
+
+```
+go doc regexp/syntax
+```
+
+to see a full description on supported regexes.
+
+### Regex examples
+
+```
+zombiequeuetool -filter 'q.2'
+
+Outputs:
+testvpn|q12
+testvpn|q72
+
+but not:
+testvpn2|q1
+
 
