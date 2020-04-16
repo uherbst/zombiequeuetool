@@ -31,6 +31,8 @@ type Arguments struct {
 	debug               *bool
 }
 
+const separator = "|" // separates msg-vpn-name and queue name
+
 // parseCommandLine parses cmd line arguments and puts them into Arguments struct.
 func doCommandLine() Arguments {
 	var a Arguments
@@ -125,7 +127,7 @@ func listQueuesWithoutConsumer(a Arguments) (map[string]bool, error) {
 
 		for _, queue := range queueList.RPC.Show.Queue.Queues.Queue {
 			if queue.Info.BindCount == 0 {
-				queues[queue.QueueName] = true
+				queues[queue.Info.MsgVpnName+separator+queue.QueueName] = true
 			}
 		}
 	}
