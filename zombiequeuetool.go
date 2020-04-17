@@ -31,9 +31,10 @@ type Arguments struct {
 	insecure            *bool
 	debug               *bool
 	filter              *string
+	delete              *bool
 }
 
-const separator = "|" // separates msg-vpn-name and queue name
+const separator = "@" // separates msg-vpn-name and queue name
 
 // parseCommandLine parses cmd line arguments and puts them into Arguments struct.
 func doCommandLine() Arguments {
@@ -46,6 +47,7 @@ func doCommandLine() Arguments {
 	a.debug = flag.Bool("debug", false, "Enable debug mode")
 	a.insecure = flag.Bool("insecure", false, "do not verify TLS server certificate")
 	a.filter = flag.String("filter", "", "Regex-filter for msg-vpn/queue-names")
+	a.delete = flag.Bool("delete", false, "delete unused queues")
 	flag.Parse()
 
 	if len(*a.password) == 0 {
@@ -61,6 +63,7 @@ func doCommandLine() Arguments {
 		fmt.Println("Debugmode: ", *a.debug)
 		fmt.Println("dont validate TLS: ", *a.insecure)
 		fmt.Println("Regex Filter: ", *a.filter)
+		fmt.Println("Delete: ", *a.delete)
 		fmt.Println("------------ End of command line values ------")
 		fmt.Println()
 	}
@@ -138,6 +141,59 @@ func listQueuesWithoutConsumer(a Arguments) (map[string]bool, error) {
 
 	return queues, nil
 }
+func deleteQueue(a Arguments, q string) error {
+	regex := regexp.MustCompile("(.*)" + separator + "(.*)")
+	names := regex.FindStringSubmatch(q)
+
+	msgvpn := names[1]
+	queue := names[2]
+
+	type Data struct {
+		ExecuteResult struct {
+			Result string `xml:"code,attr"`
+		} `xml:"execute-result"`
+	}
+
+	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: *a.insecure}}
+	client := http.Client{
+		Transport: tr,
+	}
+
+	command := "<rpc><message-spool><vpn-name>" + msgvpn +
+		"</vpn-name><no><queue><name>" + queue +
+		"</name></queue></no></message-spool></rpc>"
+
+	req, err := http.NewRequest("GET", *a.url+"/SEMP", strings.NewReader(command))
+	if err != nil {
+		log.Println("There is an error in net/http/NewRequest: ", err)
+		return err
+	}
+	req.SetBasicAuth(*a.user, *a.password)
+	req.Header.Set("Content-type", "application/xml")
+
+	resp, err := client.Do(req)
+
+	if err != nil {
+		log.Println("There is an error in net/http/client.Do: ", err)
+		return err
+	}
+	defer resp.Body.Close()
+	decoder := xml.NewDecoder(resp.Body)
+	var result Data
+	err = decoder.Decode(&result)
+	if err != nil {
+		log.Println("There is an error in decoding xml: ", err)
+		return err
+	}
+	if result.ExecuteResult.Result != "ok" {
+		log.Println("There is an error in deleting queue: ", result.ExecuteResult.Result)
+		return err
+	}
+	if *a.debug {
+		fmt.Println("Result of deleting queue" + q + ": " + result.ExecuteResult.Result)
+	}
+	return nil
+}
 
 func main() {
 	// Handling command line
@@ -177,8 +233,13 @@ func main() {
 	regex := regexp.MustCompile(*cmdargs.filter)
 	for queue, _ := range queues {
 		if regex.MatchString(queue) {
-			fmt.Println(queue)
 			numberQueuesFound++
+			fmt.Print(queue)
+			if *cmdargs.delete {
+				deleteQueue(cmdargs, queue)
+				fmt.Print(" ... deleted")
+			}
+			fmt.Println()
 		}
 	}
 	if numberQueuesFound == 0 {

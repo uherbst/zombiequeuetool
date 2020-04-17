@@ -17,6 +17,8 @@ All queues, that have never bound a consumer to them in that time, are meant as 
 Usage of ./zombiequeuetool:
   -debug
         Enable debug mode
+  -delete
+        delete unused queues
   -duration int
         how long to wait for queues without binding ? (default 10)
  -filter string
@@ -36,7 +38,7 @@ Usage of ./zombiequeuetool:
 To uniqly identify a queue, you need also the name of the message-vpn - yes, you can have the same queue name in multiple message-vpns.
 
 The output format is:
-msg-vpn-name|queue-name
+msg-vpn-name@queue-name
 
 ## Filtering the output
 All regexes supported from the go-regexp-package can be used to filter the output - for both parts: msg-vpn-name and queue name.
@@ -55,10 +57,10 @@ to see a full description on supported regexes.
 zombiequeuetool -filter 'q.2'
 
 Outputs:
-testvpn|q12
-testvpn|q72
+testvpn@q12
+testvpn@q72
 
 but not:
-testvpn2|q1
+testvpn2@q1
 
 
